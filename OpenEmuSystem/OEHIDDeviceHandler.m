@@ -305,6 +305,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 static void OEHandle_InputValueCallback(void *inContext, IOReturn inResult, void *inSender, IOHIDValueRef inIOHIDValueRef)
 {
+    NSLog(@"IN OEHandle_InputValueCallback");
     [(__bridge OEHIDDeviceHandler *)inContext dispatchEventWithHIDValue:inIOHIDValueRef];
 }
 
