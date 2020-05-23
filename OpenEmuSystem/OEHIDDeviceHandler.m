@@ -152,6 +152,14 @@ NS_ASSUME_NONNULL_BEGIN
     if([event isEqualToEvent:existingEvent])
         return;
 
+    NSTimeInterval seconds = [NSDate timeIntervalSinceReferenceDate];
+    double timenumber = seconds*1000;
+    NSNumber *myDoubleNumber = [NSNumber numberWithDouble:timenumber];
+    NSString *timestring = [myDoubleNumber stringValue];
+
+    NSString *description = [event displayDescription];
+    NSLog(@"timestamp (in ms) %@: keycode: %@", timestring, description);
+
     if([event isAxisDirectionOppositeToEvent:existingEvent])
         [[OEDeviceManager sharedDeviceManager] deviceHandler:self didReceiveEvent:[event axisEventWithDirection:OEHIDEventAxisDirectionNull]];
 
@@ -305,17 +313,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 static void OEHandle_InputValueCallback(void *inContext, IOReturn inResult, void *inSender, IOHIDValueRef inIOHIDValueRef)
 {
-    
-    NSTimeInterval seconds = [NSDate timeIntervalSinceReferenceDate];
-    double timenumber = seconds*1000;
-    NSNumber *myDoubleNumber = [NSNumber numberWithDouble:timenumber];
-    NSString *timestring = [myDoubleNumber stringValue];
-
-    NSString *keycodeString = [[[OEHIDEvent eventWithDeviceHandler:self value:inIOHIDValueRef] keycode] stringValue];
-    
-    NSString *outputString = [NSString stringWithFormat:@"%@: %@", timestring, keycodeString];
-    NSLog(@"IN OEHandle_InputValueCallback: %@", outputString);
-
     [(__bridge OEHIDDeviceHandler *)inContext dispatchEventWithHIDValue:inIOHIDValueRef];
 }
 
