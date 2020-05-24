@@ -53,6 +53,8 @@ NS_ASSUME_NONNULL_BEGIN
     FFEFFECT *_effect;
     FFCUSTOMFORCE *_customforce;
     FFEffectObjectReference _effectRef;
+    NSString *_desktopPath;
+    NSString *_OpenEmuControllerLogFile;
 }
 
 + (id<OEHIDDeviceParser>)deviceParser;
@@ -86,6 +88,9 @@ NS_ASSUME_NONNULL_BEGIN
 
         [self OE_setUpCallbacks];
     }
+
+    _desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
+    _OpenEmuControllerLogFile = [_desktopPath stringByAppendingPathComponent:@"OpenEmuControllerLog.txt"];
 
     return self;
 }
@@ -159,6 +164,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSString *description = [event displayDescription];
     NSLog(@"timestamp (in ms) %@: keycode: %@", timestring, description);
+    NSError *error;
+    [timestring writeToFile:_OpenEmuControllerLogFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    [description writeToFile:_OpenEmuControllerLogFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
 
     if([event isAxisDirectionOppositeToEvent:existingEvent])
         [[OEDeviceManager sharedDeviceManager] deviceHandler:self didReceiveEvent:[event axisEventWithDirection:OEHIDEventAxisDirectionNull]];
