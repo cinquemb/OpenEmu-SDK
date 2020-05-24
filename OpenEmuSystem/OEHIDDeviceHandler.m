@@ -163,10 +163,22 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *timestring = [myDoubleNumber stringValue];
 
     NSString *description = [event displayDescription];
-    NSLog(@"timestamp (in ms) %@: keycode: %@", timestring, description);
+    NSString *outputString;
+    outputString = [NSString stringWithFormat:@"timestamp (in ms) : %1$@, key: %2$@\n", timestring, description];
+    //NSLog(@"timestamp (in ms) %@: keycode: %@", timestring, description);
     NSError *error;
-    [timestring writeToFile:_OpenEmuControllerLogFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
-    [description writeToFile:_OpenEmuControllerLogFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
+    if (fileHandle){
+        [fileHandle seekToEndOfFile];
+        [fileHandle writeData:[outputString dataUsingEncoding:NSUTF8StringEncoding]];
+        [fileHandle closeFile];
+    }
+    else{
+        [outputString writeToFile:_OpenEmuControllerLogFile
+                  atomically:NO
+                    encoding:NSStringEncodingConversionAllowLossy
+                       error:&error];
+    }
 
     if([event isAxisDirectionOppositeToEvent:existingEvent])
         [[OEDeviceManager sharedDeviceManager] deviceHandler:self didReceiveEvent:[event axisEventWithDirection:OEHIDEventAxisDirectionNull]];
