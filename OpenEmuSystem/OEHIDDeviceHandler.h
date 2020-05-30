@@ -26,6 +26,14 @@
 
 #import <Cocoa/Cocoa.h>
 #import <OpenEmuSystem/OEDeviceHandler.h>
+#import <os/log.h>
+
+os_log_t OE_LOG_EVENT_WRITE;
+
+__attribute__((constructor))
+static void InitializeLogging() {
+    OE_LOG_EVENT_WRITE  = os_log_create("org.openemu.OpenEmuBase.events", "write");
+}
 
 NS_ASSUME_NONNULL_BEGIN
 

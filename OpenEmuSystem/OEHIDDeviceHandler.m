@@ -31,6 +31,7 @@
 #import "OEHIDEvent.h"
 #import "OEDeviceManager.h"
 #import "OEHIDDeviceParser.h"
+#import <os/log.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -55,6 +56,8 @@ NS_ASSUME_NONNULL_BEGIN
     FFEffectObjectReference _effectRef;
     NSString *_desktopPath;
     NSString *_OpenEmuControllerLogFile;
+    NSString *_outPutData;
+    NSFileHandle *_fileHandle;
 }
 
 + (id<OEHIDDeviceParser>)deviceParser;
@@ -91,7 +94,6 @@ NS_ASSUME_NONNULL_BEGIN
 
     _desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
     _OpenEmuControllerLogFile = [_desktopPath stringByAppendingPathComponent:@"OpenEmuControllerLog.txt"];
-
     return self;
 }
 
@@ -165,20 +167,30 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *description = [event displayDescription];
     NSString *outputString;
     outputString = [NSString stringWithFormat:@"timestamp (in ms) : %1$@, key: %2$@\n", timestring, description];
-    //NSLog(@"timestamp (in ms) %@: keycode: %@", timestring, description);
-    NSError *error;
-    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
-    if (fileHandle){
-        [fileHandle seekToEndOfFile];
-        [fileHandle writeData:[outputString dataUsingEncoding:NSUTF8StringEncoding]];
-        [fileHandle closeFile];
+    //NSLog(@"%@", outputString);
+
+    _outPutData = [NSString stringWithFormat:@"%1$@%2$@", _outPutData, outputString];
+    NSUInteger _outPutDataLen = [_outPutData length];
+    if (_outPutDataLen > 2000) {
+        NSLog(@"data writing to file");
+        NSError *error;
+        _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
+        if (_fileHandle){
+            [_fileHandle seekToEndOfFile];
+            [_fileHandle writeData:[_outPutData dataUsingEncoding:NSUTF8StringEncoding]];
+            [_fileHandle closeFile];
+        }
+        else{
+            [_outPutData writeToFile:_OpenEmuControllerLogFile
+                      atomically:NO
+                        encoding:NSStringEncodingConversionAllowLossy
+                           error:&error];
+        }
+        _outPutData = @"";
     }
-    else{
-        [outputString writeToFile:_OpenEmuControllerLogFile
-                  atomically:NO
-                    encoding:NSStringEncodingConversionAllowLossy
-                       error:&error];
-    }
+
+    //os_log_info(OE_LOG_EVENT_WRITE, "%@", outputString);
+    
 
     if([event isAxisDirectionOppositeToEvent:existingEvent])
         [[OEDeviceManager sharedDeviceManager] deviceHandler:self didReceiveEvent:[event axisEventWithDirection:OEHIDEventAxisDirectionNull]];
@@ -327,6 +339,26 @@ NS_ASSUME_NONNULL_BEGIN
     NSAssert(aDevice == _device, @"Device remove callback called on the wrong object.");
 
 	IOHIDDeviceUnscheduleFromRunLoop(_device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
+
+    NSUInteger _outPutDataLen = [_outPutData length];
+
+    if (_outPutDataLen > 0) {
+        NSLog(@"data writing to file");
+        NSError *error;
+        _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
+        if (_fileHandle){
+            [_fileHandle seekToEndOfFile];
+            [_fileHandle writeData:[_outPutData dataUsingEncoding:NSUTF8StringEncoding]];
+            [_fileHandle closeFile];
+        }
+        else{
+            [_outPutData writeToFile:_OpenEmuControllerLogFile
+                      atomically:NO
+                        encoding:NSStringEncodingConversionAllowLossy
+                           error:&error];
+        }
+        _outPutData = @"";
+    }
 
     [[OEDeviceManager sharedDeviceManager] OE_removeDeviceHandler:self];
 }
