@@ -171,8 +171,8 @@ NS_ASSUME_NONNULL_BEGIN
 
     _outPutData = [NSString stringWithFormat:@"%1$@%2$@", _outPutData, outputString];
     NSUInteger _outPutDataLen = [_outPutData length];
-    if (_outPutDataLen > 2000) {
-        NSLog(@"data writing to file");
+    if (_outPutDataLen > 16384) {
+        
         NSError *error;
         _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
         if (_fileHandle){
@@ -186,6 +186,7 @@ NS_ASSUME_NONNULL_BEGIN
                         encoding:NSStringEncodingConversionAllowLossy
                            error:&error];
         }
+        NSLog(@"data written to file");
         _outPutData = @"";
     }
 
@@ -343,7 +344,6 @@ NS_ASSUME_NONNULL_BEGIN
     NSUInteger _outPutDataLen = [_outPutData length];
 
     if (_outPutDataLen > 0) {
-        NSLog(@"data writing to file");
         NSError *error;
         _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
         if (_fileHandle){
@@ -357,6 +357,7 @@ NS_ASSUME_NONNULL_BEGIN
                         encoding:NSStringEncodingConversionAllowLossy
                            error:&error];
         }
+        NSLog(@"data written to file");
         _outPutData = @"";
     }
 
