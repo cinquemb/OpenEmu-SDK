@@ -35,6 +35,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef struct {
+    OEHIDDeviceHandler *classInstance;
+    IOHIDDeviceRef *devRef;
+} nfbContext;
+
 @interface OEHIDEvent ()
 + (instancetype)OE_eventWithElement:(IOHIDElementRef)element value:(NSInteger)value;
 @end
@@ -150,8 +155,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)dispatchEvent:(OEHIDEvent *)event
 {
-    if(event == nil)
+    if(event == nil){
+        NSLog(@"test nil event");
         return;
+    }
 
     NSNumber *cookieKey = @([event cookie]);
     OEHIDEvent *existingEvent = _latestEvents[cookieKey];
@@ -208,6 +215,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)dispatchEventWithHIDValue:(IOHIDValueRef)aValue
 {
     [self dispatchEvent:[self eventWithHIDValue:aValue]];
+}
+
+- (OEHIDEvent *)nullEventWithHIDValue:(IOHIDValueRef)aValue
+{
+    OEHIDEvent *event = nil;
+    return [[event nullEvent] eventWithDeviceHandler:self];
+}
+
+- (void)dispatchNullEventWithHIDValue:(IOHIDValueRef)aValue
+{
+    [self dispatchEvent:[self nullEventWithHIDValue:aValue]];
 }
 
 - (io_service_t)serviceRef
@@ -333,6 +351,23 @@ NS_ASSUME_NONNULL_BEGIN
 
     // Attach to the runloop
     IOHIDDeviceScheduleWithRunLoop(_device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
+
+
+    // Attach timer that checks new events from external process every 1 ms
+    static nfbContext ctxInit = {.classInstance = (__bridge void *)self, .devRef = _device};
+    CFRunLoopTimerRef timer1 = CFRunLoopTimerCreate(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, OE_neuralFeedbackCallback, ctxInit);
+    CFRunLoopAddTimer(CFRunLoopGetMain(), timer1, kCFRunLoopCommonModes);
+}
+
+
+static void OE_neuralFeedbackCallback(CFRunLoopTimerRef timer, void *inContext)
+{
+    /*
+        TODO: need to figure out how to:
+            - construct events from data in ram
+            - dispatch constructed events
+    */
+    [(__bridge OEHIDDeviceHandler *)inContext.classInstance dispatchNullEventWithHIDValue: inContext.devRef];
 }
 
 - (void)OE_removeDeviceHandlerForDevice:(IOHIDDeviceRef)aDevice
