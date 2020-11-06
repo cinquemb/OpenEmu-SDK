@@ -35,11 +35,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef struct {
-    OEHIDDeviceHandler *classInstance;
-    IOHIDDeviceRef *devRef;
-} nfbContext;
-
 @interface OEHIDEvent ()
 + (instancetype)OE_eventWithElement:(IOHIDElementRef)element value:(NSInteger)value;
 @end
@@ -156,7 +151,6 @@ typedef struct {
 - (void)dispatchEvent:(OEHIDEvent *)event
 {
     if(event == nil){
-        NSLog(@"test nil event");
         return;
     }
 
@@ -173,7 +167,7 @@ typedef struct {
 
     NSString *description = [event displayDescription];
     NSString *outputString;
-    outputString = [NSString stringWithFormat:@"timestamp (in ms) : %1$@, key: %2$@\n", timestring, description];
+    outputString = [NSString stringWithFormat:@"timestamp (in ms) : %1$@, key: %2$@, cookie key:%3$@\n", timestring, description, cookieKey];
     //NSLog(@"%@", outputString);
 
     _outPutData = [NSString stringWithFormat:@"%1$@%2$@", _outPutData, outputString];
@@ -215,17 +209,6 @@ typedef struct {
 - (void)dispatchEventWithHIDValue:(IOHIDValueRef)aValue
 {
     [self dispatchEvent:[self eventWithHIDValue:aValue]];
-}
-
-- (OEHIDEvent *)nullEventWithHIDValue:(IOHIDValueRef)aValue
-{
-    OEHIDEvent *event = nil;
-    return [[event nullEvent] eventWithDeviceHandler:self];
-}
-
-- (void)dispatchNullEventWithHIDValue:(IOHIDValueRef)aValue
-{
-    [self dispatchEvent:[self nullEventWithHIDValue:aValue]];
 }
 
 - (io_service_t)serviceRef
@@ -354,20 +337,17 @@ typedef struct {
 
 
     // Attach timer that checks new events from external process every 1 ms
-    static nfbContext ctxInit = {.classInstance = (__bridge void *)self, .devRef = _device};
-    CFRunLoopTimerRef timer1 = CFRunLoopTimerCreate(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, OE_neuralFeedbackCallback, ctxInit);
-    CFRunLoopAddTimer(CFRunLoopGetMain(), timer1, kCFRunLoopCommonModes);
-}
+    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, ^(CFRunLoopTimerRef timer) {
+            /*
+            TODO: need to figure out how to:
+                - check value from ram, check if timestamp is new
+                - construct events from data in ram
+            */
 
-
-static void OE_neuralFeedbackCallback(CFRunLoopTimerRef timer, void *inContext)
-{
-    /*
-        TODO: need to figure out how to:
-            - construct events from data in ram
-            - dispatch constructed events
-    */
-    [(__bridge OEHIDDeviceHandler *)inContext.classInstance dispatchNullEventWithHIDValue: inContext.devRef];
+            OEHIDEvent *event = nil;
+            [self dispatchEvent:event];
+    });
+    CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
 }
 
 - (void)OE_removeDeviceHandlerForDevice:(IOHIDDeviceRef)aDevice
