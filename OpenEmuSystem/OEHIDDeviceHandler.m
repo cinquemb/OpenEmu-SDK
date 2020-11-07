@@ -348,8 +348,6 @@ NS_ASSUME_NONNULL_BEGIN
     }
     str = (char*) shmat(shmid, NULL, 0);
 
-
-
     // Attach timer that checks new events from external process every 1 ms (0.001)
     CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.01, 0, 0, ^(CFRunLoopTimerRef timer) {
             /*
@@ -358,19 +356,49 @@ NS_ASSUME_NONNULL_BEGIN
                 - construct events from data in ram
             */
 
+            /* need to construct event with all this information: 
+
+                @interface OEHIDEvent ()
+                {
+                    __weak OEDeviceHandler *_deviceHandler;
+                    OEHIDEventType          _type;
+                    NSTimeInterval          _timestamp;
+                    NSUInteger              _cookie;
+
+                    union {
+                        // Axis and Trigger events share the same structure.
+                        struct {
+                            OEHIDEventAxis          axis;
+                            OEHIDEventAxisDirection direction;
+                            CGFloat                 value;
+                        } axis;
+                        struct {
+                            NSUInteger              buttonNumber;
+                            OEHIDEventState         state;
+                        } button;
+                        struct {
+                            OEHIDEventHatSwitchType hatSwitchType;
+                            OEHIDEventHatDirection  hatDirection;
+                        } hatSwitch;
+                        struct {
+                            NSUInteger              keycode;
+                            OEHIDEventState         state;
+                        } key;
+                    } _data;
+                }
+
+                _data.hatSwitch.hatDirection = OEHIDEventHatDirectionFromNSString()
+
+                _data.axis.direction = OEHIDEventAxisFromNSString()
+            */
+
             int len = (int)strlen(str);
             NSNumber *lenNumber = [NSNumber numberWithInt:len];
             NSString *lenNumberStr = [lenNumber stringValue];
-            NSLog(@"%@", lenNumberStr);
+            //NSLog(@"%@", lenNumberStr);
 
             NSString *nfbString = [NSString stringWithUTF8String:str];
-            NSLog(@"%@", nfbString);
-
-
-            //shmdt(str);
-
-           // NSLog(@"here");
-
+            //NSLog(@"%@", nfbString);
             OEHIDEvent *event = nil;
             [self dispatchEvent:event];
     });
@@ -400,6 +428,7 @@ NS_ASSUME_NONNULL_BEGIN
                            error:&error];
         }
         NSLog(@"data written to file");
+        shmdt(str);
         _outPutData = @"";
     }
 
