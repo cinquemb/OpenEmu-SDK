@@ -31,7 +31,10 @@
 #import "OEHIDEvent.h"
 #import "OEDeviceManager.h"
 #import "OEHIDDeviceParser.h"
-#import <os/log.h>
+
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -58,6 +61,9 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *_OpenEmuControllerLogFile;
     NSString *_outPutData;
     NSFileHandle *_fileHandle;
+    key_t key;
+    int shmid;
+    char *str;
 }
 
 + (id<OEHIDDeviceParser>)deviceParser;
@@ -335,14 +341,35 @@ NS_ASSUME_NONNULL_BEGIN
     // Attach to the runloop
     IOHIDDeviceScheduleWithRunLoop(_device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
 
+    key = ftok("/Users/cinquemb/openemu/OpenEmu/nfbMemoryBridge", 'a'); 
+    shmid = shmget(key, 1024, 0666); 
+    if (shmid < 0) {
+        NSLog(@"*** shmget error (client) ***");
+    }
+    str = (char*) shmat(shmid, NULL, 0);
 
-    // Attach timer that checks new events from external process every 1 ms
-    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, ^(CFRunLoopTimerRef timer) {
+
+
+    // Attach timer that checks new events from external process every 1 ms (0.001)
+    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.01, 0, 0, ^(CFRunLoopTimerRef timer) {
             /*
             TODO: need to figure out how to:
                 - check value from ram, check if timestamp is new
                 - construct events from data in ram
             */
+
+            int len = (int)strlen(str);
+            NSNumber *lenNumber = [NSNumber numberWithInt:len];
+            NSString *lenNumberStr = [lenNumber stringValue];
+            NSLog(@"%@", lenNumberStr);
+
+            NSString *nfbString = [NSString stringWithUTF8String:str];
+            NSLog(@"%@", nfbString);
+
+
+            //shmdt(str);
+
+           // NSLog(@"here");
 
             OEHIDEvent *event = nil;
             [self dispatchEvent:event];
