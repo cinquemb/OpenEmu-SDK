@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface OEHIDEvent ()
 + (instancetype)OE_eventWithElement:(IOHIDElementRef)element value:(NSInteger)value;
-+ (instancetype)OE_initWithArgs:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp cookie:(NSUInteger)cookie parsed_type:(OEHIDEventType *) parsed_type;
++ (instancetype)OE_initWithArgs:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp cookie:(NSUInteger)cookie eventType:(OEHIDEventType)eventType axis:(OEHIDEventAxis)axis axisDirection:(OEHIDEventAxisDirection)axisDirection axisValue:(CGFloat)axisValue buttonNumber:(NSUInteger)buttonNumber buttonState:(OEHIDEventState)buttonState hatSwitchType:(OEHIDEventHatSwitchType)hatSwitchType hatDirection:(OEHIDEventHatDirection)hatDirection keyCode:(NSUInteger)keyCode keyState:(OEHIDEventState)keyState;
 
 /* mods below */
 - (NSString *)getType;
@@ -393,73 +393,31 @@ NS_ASSUME_NONNULL_BEGIN
     CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 1, 0, 0, ^(CFRunLoopTimerRef timer) {
             /*
             TODO: need to figure out how to:
-                - check value from ram, check if timestamp is new
-                - construct events from data in ram
+                - test changing values from external process (csv formate with no headers)
             */
-
-            /* need to construct event with all this information: 
-
-                @interface OEHIDEvent ()
-                {
-                    __weak OEDeviceHandler *_deviceHandler; [done]
-                    OEHIDEventType          _type; [done]
-                    NSTimeInterval          _timestamp; [done]
-                    NSUInteger              _cookie; [done]
-                    CGEventRef              _keyboardEvent; [ignore]
-                    NSEvent                *_cachedKeyboardEvent; [ignore]
-
-                    union {
-                        // Axis and Trigger events share the same structure.
-                        struct {
-                            OEHIDEventAxis          axis;
-                            OEHIDEventAxisDirection direction;
-                            CGFloat                 value;
-                        } axis;
-                        struct {
-                            NSUInteger              buttonNumber;
-                            OEHIDEventState         state;
-                        } button;
-                        struct {
-                            OEHIDEventHatSwitchType hatSwitchType;
-                            OEHIDEventHatDirection  hatDirection;
-                        } hatSwitch;
-                        struct {
-                            NSUInteger              keycode;
-                            OEHIDEventState         state;
-                        } key;
-                    } _data;
-                }
-
-                event._data.hatSwitch.hatDirection = OEHIDEventHatDirectionFromNSString()
-                event._data.axis.direction = OEHIDEventAxisFromNSString()
-
-            */
-
-            //timestring (in ms): %1$@, eventType: %2$@, cookieKey:%3$@, axis:%4$@, axisDirection:%5$@, axisValue:%6$@, buttonNumber:%7$@, buttonState:%8$@, hatSwitchType:%9$@, hatDirection:%10$@, keyState:%11$@, keyCode:%12$@\n"
-            //timestring (in ms) : 626537311337.967, eventType: 3, cookieKey:42, axis:2, axisDirection:2, axisValue:, buttonNumber:2, buttonState:2, hatSwitchType:2, hatDirection:2, keyState:2, keyCode:2
-
             int len = (int)strlen(str);
             NSNumber *lenNumber = [NSNumber numberWithInt:len];
             NSString *lenNumberStr = [lenNumber stringValue];
 
             NSString *nfbString = [NSString stringWithUTF8String:str];
-
-            NSInteger b = [a integerValue];
-
             NSArray *eventValues = [nfbString componentsSeparatedByString:@","];
 
             if ([eventValues count] == 12){
-                NSDouble timestamp
-                NSTimeInterval timestamp = [eventValues[0] floatValue];
-                NSUInteger eventType = [eventValues[1] integerValue];
-                NSUInteger cookie = [eventValues[2] integerValue];
-
+                NSTimeInterval timestamp = (![eventValues[0] isEqual:@"null"]) ? [eventValues[0] doubleValue] : [NSDate timeIntervalSinceReferenceDate];
+                NSUInteger eventType = (![eventValues[1] isEqual:@"null"]) ? [eventValues[1] integerValue] : nil;
+                NSUInteger cookie = (![eventValues[2] isEqual:@"null"]) ? [eventValues[2] integerValue] : nil;
+                NSUInteger axis = (![eventValues[3] isEqual:@"null"]) ? [eventValues[3] integerValue] : nil;
+                NSUInteger axisDirection = (![eventValues[4] isEqual:@"null"]) ? [eventValues[4] integerValue] : nil;
+                NSUInteger axisValue = (![eventValues[5] isEqual:@"null"]) ? [eventValues[5] integerValue] : nil;
+                NSUInteger buttonNumber = (![eventValues[6] isEqual:@"null"]) ? [eventValues[6] integerValue] : nil;
+                NSUInteger buttonState = (![eventValues[7] isEqual:@"null"]) ? [eventValues[7] integerValue] : nil;
+                NSUInteger hatSwitchType = (![eventValues[8] isEqual:@"null"]) ? [eventValues[8] integerValue] : nil;
+                NSUInteger hatDirection = (![eventValues[9] isEqual:@"null"]) ? [eventValues[9] integerValue] : nil;
+                NSUInteger keyState = (![eventValues[10] isEqual:@"null"]) ? [eventValues[10] integerValue] : nil;
+                NSUInteger keyCode = (![eventValues[11] isEqual:@"null"]) ? [eventValues[11] integerValue] : nil;
                 
-
-                
-                OEHIDEvent *event = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie parsed_type:1];
-                //[self dispatchEvent:event];
-
+                OEHIDEvent *event = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie eventType:eventType axis:axis axisDirection:axisDirection axisValue:axisValue buttonNumber:buttonNumber buttonState:buttonState hatSwitchType:hatSwitchType hatDirection:hatDirection keyCode:keyCode keyState:keyState];
+                [self dispatchEvent:event];
             }
     });
     CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
