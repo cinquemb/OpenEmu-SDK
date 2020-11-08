@@ -326,6 +326,7 @@ static inline BOOL _OEFloatEqual(CGFloat v1, CGFloat v2)
 - (OEHIDEvent *)OE_eventWithDeviceHandler:(OEDeviceHandler *)aDeviceHandler;
 
 + (instancetype)OE_eventWithElement:(IOHIDElementRef)element value:(NSInteger)value;
++ (instancetype)OE_initWithArgs:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp cookie:(NSUInteger)cookie parsed_type:(OEHIDEventType *) parsed_type;
 
 @end
 
@@ -469,6 +470,13 @@ static CGEventSourceRef _keyboardEventSource;
         _cookie        = cookie;
     }
     return self;
+}
+
++ (instancetype)OE_initWithArgs:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp cookie:(NSUInteger)cookie parsed_type:(OEHIDEventType *) parsed_type;
+{
+    OEHIDEvent *ret = [[self alloc] initWithDeviceHandler:aDeviceHandler timestamp:timestamp cookie:cookie];
+    ret->_type = parsed_type;
+    return ret;
 }
 
 + (id)axisEventWithDeviceHandler:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp axis:(OEHIDEventAxis)axis direction:(OEHIDEventAxisDirection)direction cookie:(NSUInteger)cookie;
@@ -937,6 +945,64 @@ static CGEventSourceRef _keyboardEventSource;
 {
     return _cookie;
 }
+
+
+
+/* mod methods */
+- (NSString *)getType
+{
+    return (_type != nil) ? [NSString stringWithFormat:@"%lu", _type] : @"";
+}
+
+- (NSString *)getAxis
+{
+    return (_data.axis.axis != nil) ? [NSString stringWithFormat:@"%lu", _data.axis.axis] : @"";
+}
+
+- (NSString *)getAxisDirection
+{
+    return (_data.axis.direction != nil) ? [NSString stringWithFormat:@"%lu", _data.axis.direction] : @"";
+}
+
+- (NSString *)getAxisValue
+{
+    return (_data.axis.value) ? [NSString stringWithFormat:@"%f", _data.axis.value] : @"";
+}
+
+
+- (NSString *)getButtonNumber
+{
+    return (_data.button.buttonNumber != nil) ? [NSString stringWithFormat:@"%lu", _data.button.buttonNumber] : @"";
+}
+
+- (NSString *)getButtonState
+{
+    return (_data.button.state != nil) ? [NSString stringWithFormat:@"%ld", _data.button.state] : @"";
+}
+
+
+- (NSString *)getHatSwitchType
+{
+    return (_data.hatSwitch.hatSwitchType != nil) ? [NSString stringWithFormat:@"%lu", _data.hatSwitch.hatSwitchType] : @"";
+}
+
+- (NSString *)getHatDirection
+{
+    return (_data.hatSwitch.hatDirection != nil) ? [NSString stringWithFormat:@"%lu", _data.hatSwitch.hatDirection] : @"";
+}
+
+
+- (NSString *)getKeyState
+{
+    return (_data.key.state != nil) ? [NSString stringWithFormat:@"%ld", _data.key.state] : @"";
+}
+
+- (NSString *)getKeyCode
+{
+    return (_data.key.keycode != nil) ? [NSString stringWithFormat:@"%lu", _data.key.keycode] : @"";
+}
+/* mod methods */
+
 
 - (NSString *)description
 {

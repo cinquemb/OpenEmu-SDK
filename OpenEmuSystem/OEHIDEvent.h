@@ -100,6 +100,19 @@ extern OEHIDEventType OEHIDEventTypeFromIOHIDElement(IOHIDElementRef elem);
 
 - (NSString *)displayDescription;
 
+/* mods below */
+- (NSString *)getType;
+- (NSString *)getAxis;
+- (NSString *)getAxisDirection;
+- (NSString *)getAxisValue;
+- (NSString *)getButtonNumber;
+- (NSString *)getButtonState;
+- (NSString *)getHatSwitchType;
+- (NSString *)getHatDirection;
+- (NSString *)getKeyState;
+- (NSString *)getKeyCode;
+/* mods above */
+
 + (NSUInteger)keyCodeForVirtualKey:(CGCharCode)charCode;
 + (instancetype)eventWithDeviceHandler:(OEDeviceHandler *)aDeviceHandler value:(IOHIDValueRef)aValue;
 + (instancetype)axisEventWithDeviceHandler:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp axis:(OEHIDEventAxis)axis direction:(OEHIDEventAxisDirection)direction cookie:(NSUInteger)cookie;
@@ -177,12 +190,38 @@ extern OEHIDEventType OEHIDEventTypeFromIOHIDElement(IOHIDElementRef elem);
 
 - (instancetype)eventWithDeviceHandler:(OEDeviceHandler *)aDeviceHandler;
 
+/* mods below */
+- (NSString *)getType;
+- (NSString *)getAxis;
+- (NSString *)getAxisDirection;
+- (NSString *)getAxisValue;
+- (NSString *)getButtonNumber;
+- (NSString *)getButtonState;
+- (NSString *)getHatSwitchType;
+- (NSString *)getHatDirection;
+- (NSString *)getKeyState;
+- (NSString *)getKeyCode;
+/* mods above */
+
 @end
 
 @interface OEHIDEvent (OEHIDEventBinding)
 
 - (NSUInteger)bindingHash;
 - (BOOL)isBindingEqualToEvent:(OEHIDEvent *)anEvent;
+
+/* mods below */
+- (NSString *)getType;
+- (NSString *)getAxis;
+- (NSString *)getAxisDirection;
+- (NSString *)getAxisValue;
+- (NSString *)getButtonNumber;
+- (NSString *)getButtonState;
+- (NSString *)getHatSwitchType;
+- (NSString *)getHatDirection;
+- (NSString *)getKeyState;
+- (NSString *)getKeyCode;
+/* mods above */
 
 @end
 

@@ -40,6 +40,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface OEHIDEvent ()
 + (instancetype)OE_eventWithElement:(IOHIDElementRef)element value:(NSInteger)value;
++ (instancetype)OE_initWithArgs:(OEDeviceHandler *)aDeviceHandler timestamp:(NSTimeInterval)timestamp cookie:(NSUInteger)cookie parsed_type:(OEHIDEventType *) parsed_type;
+
+/* mods below */
+- (NSString *)getType;
+- (NSString *)getAxis;
+- (NSString *)getAxisDirection;
+- (NSString *)getAxisValue;
+- (NSString *)getButtonNumber;
+- (NSString *)getButtonState;
+- (NSString *)getHatSwitchType;
+- (NSString *)getHatDirection;
+- (NSString *)getKeyState;
+- (NSString *)getKeyCode;
+/* mods above */
 @end
 
 @interface OEDeviceManager ()
@@ -61,6 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *_OpenEmuControllerLogFile;
     NSString *_outPutData;
     NSFileHandle *_fileHandle;
+    int _lines;
     key_t key;
     int shmid;
     char *str;
@@ -100,6 +115,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     _desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
     _OpenEmuControllerLogFile = [_desktopPath stringByAppendingPathComponent:@"OpenEmuControllerLog.txt"];
+    _lines = 0;
     return self;
 }
 
@@ -171,15 +187,39 @@ NS_ASSUME_NONNULL_BEGIN
     NSNumber *myDoubleNumber = [NSNumber numberWithDouble:timenumber];
     NSString *timestring = [myDoubleNumber stringValue];
 
-    NSString *description = [event displayDescription];
+    //NSString *description = [event displayDescription];
+
+    NSString *eventType = [event getType];
+    
+    NSString *axis = [event getAxis];
+    NSString *axisDirection = [event getAxisDirection];
+    NSString *axisValue = [event getAxisValue];
+
+
+    NSString *buttonNumber = [event getButtonNumber];
+    NSString *buttonState = [event getButtonState];
+
+    NSString *hatSwitchType = [event getHatSwitchType];
+    NSString *hatDirection = [event getHatDirection];
+    
+    NSString *keyState = [event getKeyState];
+    NSString *keyCode = [event getKeyCode];
+
+
     NSString *outputString;
-    outputString = [NSString stringWithFormat:@"timestamp (in ms) : %1$@, key: %2$@, cookie key:%3$@\n", timestring, description, cookieKey];
+    outputString = [NSString stringWithFormat:@"timestring (in ms): %1$@, eventType: %2$@, cookieKey:%3$@, axis:%4$@, axisDirection:%5$@, axisValue:%6$@, buttonNumber:%7$@, buttonState:%8$@, hatSwitchType:%9$@, hatDirection:%10$@, keyState:%11$@, keyCode:%12$@\n", 
+        timestring, 
+        eventType, cookieKey,
+        axis, axisDirection, axisValue,
+        buttonNumber, buttonState,
+        hatSwitchType, hatDirection,
+        keyState, keyCode
+    ];
     //NSLog(@"%@", outputString);
 
     _outPutData = [NSString stringWithFormat:@"%1$@%2$@", _outPutData, outputString];
-    NSUInteger _outPutDataLen = [_outPutData length];
-    if (_outPutDataLen > 16384) {
-        
+    _lines++;
+    if (_lines > 64) {
         NSError *error;
         _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
         if (_fileHandle){
@@ -195,6 +235,7 @@ NS_ASSUME_NONNULL_BEGIN
         }
         NSLog(@"data written to file");
         _outPutData = @"";
+        _lines = 0;
     }
 
     //os_log_info(OE_LOG_EVENT_WRITE, "%@", outputString);
@@ -349,7 +390,7 @@ NS_ASSUME_NONNULL_BEGIN
     str = (char*) shmat(shmid, NULL, 0);
 
     // Attach timer that checks new events from external process every 1 ms (0.001)
-    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.01, 0, 0, ^(CFRunLoopTimerRef timer) {
+    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 1, 0, 0, ^(CFRunLoopTimerRef timer) {
             /*
             TODO: need to figure out how to:
                 - check value from ram, check if timestamp is new
@@ -360,10 +401,12 @@ NS_ASSUME_NONNULL_BEGIN
 
                 @interface OEHIDEvent ()
                 {
-                    __weak OEDeviceHandler *_deviceHandler;
-                    OEHIDEventType          _type;
-                    NSTimeInterval          _timestamp;
-                    NSUInteger              _cookie;
+                    __weak OEDeviceHandler *_deviceHandler; [done]
+                    OEHIDEventType          _type; [done]
+                    NSTimeInterval          _timestamp; [done]
+                    NSUInteger              _cookie; [done]
+                    CGEventRef              _keyboardEvent; [ignore]
+                    NSEvent                *_cachedKeyboardEvent; [ignore]
 
                     union {
                         // Axis and Trigger events share the same structure.
@@ -387,20 +430,37 @@ NS_ASSUME_NONNULL_BEGIN
                     } _data;
                 }
 
-                _data.hatSwitch.hatDirection = OEHIDEventHatDirectionFromNSString()
+                event._data.hatSwitch.hatDirection = OEHIDEventHatDirectionFromNSString()
+                event._data.axis.direction = OEHIDEventAxisFromNSString()
 
-                _data.axis.direction = OEHIDEventAxisFromNSString()
             */
+
+            //timestring (in ms): %1$@, eventType: %2$@, cookieKey:%3$@, axis:%4$@, axisDirection:%5$@, axisValue:%6$@, buttonNumber:%7$@, buttonState:%8$@, hatSwitchType:%9$@, hatDirection:%10$@, keyState:%11$@, keyCode:%12$@\n"
+            //timestring (in ms) : 626537311337.967, eventType: 3, cookieKey:42, axis:2, axisDirection:2, axisValue:, buttonNumber:2, buttonState:2, hatSwitchType:2, hatDirection:2, keyState:2, keyCode:2
 
             int len = (int)strlen(str);
             NSNumber *lenNumber = [NSNumber numberWithInt:len];
             NSString *lenNumberStr = [lenNumber stringValue];
-            //NSLog(@"%@", lenNumberStr);
 
             NSString *nfbString = [NSString stringWithUTF8String:str];
-            //NSLog(@"%@", nfbString);
-            OEHIDEvent *event = nil;
-            [self dispatchEvent:event];
+
+            NSInteger b = [a integerValue];
+
+            NSArray *eventValues = [nfbString componentsSeparatedByString:@","];
+
+            if ([eventValues count] == 12){
+                NSDouble timestamp
+                NSTimeInterval timestamp = [eventValues[0] floatValue];
+                NSUInteger eventType = [eventValues[1] integerValue];
+                NSUInteger cookie = [eventValues[2] integerValue];
+
+                
+
+                
+                OEHIDEvent *event = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie parsed_type:1];
+                //[self dispatchEvent:event];
+
+            }
     });
     CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
 }
@@ -411,9 +471,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 	IOHIDDeviceUnscheduleFromRunLoop(_device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
 
-    NSUInteger _outPutDataLen = [_outPutData length];
-
-    if (_outPutDataLen > 0) {
+    if (_lines > 0)  {
         NSError *error;
         _fileHandle = [NSFileHandle fileHandleForWritingAtPath:_OpenEmuControllerLogFile];
         if (_fileHandle){
@@ -428,6 +486,7 @@ NS_ASSUME_NONNULL_BEGIN
                            error:&error];
         }
         NSLog(@"data written to file");
+        _lines = 0;
         shmdt(str);
         _outPutData = @"";
     }
