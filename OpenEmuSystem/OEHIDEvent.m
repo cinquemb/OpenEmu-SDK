@@ -479,7 +479,7 @@ static CGEventSourceRef _keyboardEventSource;
 
     ret->_data.axis.axis = axis;
     ret->_data.axis.direction = MIN(OEHIDEventAxisDirectionPositive, MAX(axisDirection, OEHIDEventAxisDirectionNegative));
-    ret->_data.axis.value = ret->_data.axis.direction;
+    ret->_data.axis.value = axisValue;
 
     ret->_data.button.buttonNumber = buttonNumber;
     ret->_data.button.state = buttonState;

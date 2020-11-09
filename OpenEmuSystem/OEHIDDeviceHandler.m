@@ -79,6 +79,7 @@ NS_ASSUME_NONNULL_BEGIN
     key_t key;
     int shmid;
     char *str;
+    NSString *_prev_str;
 }
 
 + (id<OEHIDDeviceParser>)deviceParser;
@@ -235,6 +236,7 @@ NS_ASSUME_NONNULL_BEGIN
         }
         NSLog(@"data written to file");
         _outPutData = @"";
+        _prev_str = @"";
         _lines = 0;
     }
 
@@ -390,7 +392,7 @@ NS_ASSUME_NONNULL_BEGIN
     str = (char*) shmat(shmid, NULL, 0);
 
     // Attach timer that checks new events from external process every 1 ms (0.001)
-    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 1, 0, 0, ^(CFRunLoopTimerRef timer) {
+    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, ^(CFRunLoopTimerRef timer) {
             /*
             TODO: need to figure out how to:
                 - test changing values from external process (csv formate with no headers)
@@ -400,6 +402,10 @@ NS_ASSUME_NONNULL_BEGIN
             NSString *lenNumberStr = [lenNumber stringValue];
 
             NSString *nfbString = [NSString stringWithUTF8String:str];
+            
+            if ([nfbString isEqual:_prev_str])
+                return;
+            
             NSArray *eventValues = [nfbString componentsSeparatedByString:@","];
 
             if ([eventValues count] == 12){
@@ -419,6 +425,8 @@ NS_ASSUME_NONNULL_BEGIN
                 OEHIDEvent *event = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie eventType:eventType axis:axis axisDirection:axisDirection axisValue:axisValue buttonNumber:buttonNumber buttonState:buttonState hatSwitchType:hatSwitchType hatDirection:hatDirection keyCode:keyCode keyState:keyState];
                 [self dispatchEvent:event];
             }
+
+            _prev_str = nfbString;
     });
     CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
 }
