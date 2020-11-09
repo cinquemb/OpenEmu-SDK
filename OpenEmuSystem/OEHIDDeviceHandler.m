@@ -424,6 +424,8 @@ NS_ASSUME_NONNULL_BEGIN
                 
                 OEHIDEvent *event = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie eventType:eventType axis:axis axisDirection:axisDirection axisValue:axisValue buttonNumber:buttonNumber buttonState:buttonState hatSwitchType:hatSwitchType hatDirection:hatDirection keyCode:keyCode keyState:keyState];
                 [self dispatchEvent:event];
+                OEHIDEvent *eventNull = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie eventType:eventType axis:axis axisDirection:nil axisValue:axisValue buttonNumber:buttonNumber buttonState:nil hatSwitchType:hatSwitchType hatDirection:nil keyCode:keyCode keyState:nil];
+                [self dispatchEvent:eventNull];
             }
 
             _prev_str = nfbString;
