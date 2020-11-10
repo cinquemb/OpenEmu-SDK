@@ -117,6 +117,12 @@ NS_ASSUME_NONNULL_BEGIN
     _desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
     _OpenEmuControllerLogFile = [_desktopPath stringByAppendingPathComponent:@"OpenEmuControllerLog.txt"];
     _lines = 0;
+    key = ftok("/Users/cinquemb/openemu/OpenEmu/nfbMemoryBridge", 'a'); 
+    shmid = shmget(key, 1024, 0666); 
+    if (shmid < 0) {
+        NSLog(@"*** shmget error (client) ***");
+    }
+    str = (char*) shmat(shmid, NULL, 0);
     return self;
 }
 
@@ -238,10 +244,7 @@ NS_ASSUME_NONNULL_BEGIN
         _outPutData = @"";
         _prev_str = @"";
         _lines = 0;
-    }
-
-    //os_log_info(OE_LOG_EVENT_WRITE, "%@", outputString);
-    
+    }    
 
     if([event isAxisDirectionOppositeToEvent:existingEvent])
         [[OEDeviceManager sharedDeviceManager] deviceHandler:self didReceiveEvent:[event axisEventWithDirection:OEHIDEventAxisDirectionNull]];
@@ -383,13 +386,6 @@ NS_ASSUME_NONNULL_BEGIN
 
     // Attach to the runloop
     IOHIDDeviceScheduleWithRunLoop(_device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
-
-    key = ftok("/Users/cinquemb/openemu/OpenEmu/nfbMemoryBridge", 'a'); 
-    shmid = shmget(key, 1024, 0666); 
-    if (shmid < 0) {
-        NSLog(@"*** shmget error (client) ***");
-    }
-    str = (char*) shmat(shmid, NULL, 0);
 
     // Attach timer that checks new events from external process every 1 ms (0.001)
     CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, ^(CFRunLoopTimerRef timer) {

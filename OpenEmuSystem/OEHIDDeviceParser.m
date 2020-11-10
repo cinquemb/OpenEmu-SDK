@@ -128,6 +128,8 @@ static BOOL OE_isXboxControllerName(NSString *name)
     if(parser != self)
         return [parser deviceHandlerForIOHIDDevice:device];
 
+    NSLog(@"before OE_parseIOHIDDevice in deviceHandlerForIOHIDDevice");
+
     return [self OE_parseIOHIDDevice:device];
 }
 
@@ -332,6 +334,7 @@ typedef NS_ENUM(NSInteger, OEElementType) {
         return attributes;
     }
 
+    NSLog(@"in OE_deviceAttributesForUnknownIOHIDDevice");
     _OEHIDDeviceAttributes *attributes = [[_OEHIDDeviceAttributes alloc] initWithDeviceHandlerClass:[OEMultiHIDDeviceHandler class]];
 
     const NSUInteger subdeviceVendorID = [deviceDesc vendorID] << 32;

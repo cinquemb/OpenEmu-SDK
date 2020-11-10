@@ -387,6 +387,7 @@ static const void * kOEBluetoothDevicePairSyncStyleKey = &kOEBluetoothDevicePair
     NSAssert(device != NULL, @"Passing NULL device.");
 
     OEHIDDeviceHandler *handler = nil;
+    NSLog(@"in OE_addDeviceHandlerForDeviceRef");
     if(IOHIDDeviceConformsTo(device, kHIDPage_GenericDesktop, kHIDUsage_GD_Keyboard))
         handler = [[OEHIDDeviceHandler alloc] initWithIOHIDDevice:device deviceDescription:nil];
     else
