@@ -32,10 +32,6 @@
 #import "OEDeviceManager.h"
 #import "OEHIDDeviceParser.h"
 
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <stdio.h>
-
 NS_ASSUME_NONNULL_BEGIN
 
 @interface OEHIDEvent ()
@@ -76,10 +72,6 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *_outPutData;
     NSFileHandle *_fileHandle;
     int _lines;
-    key_t key;
-    int shmid;
-    char *str;
-    NSString *_prev_str;
 }
 
 + (id<OEHIDDeviceParser>)deviceParser;
@@ -117,12 +109,6 @@ NS_ASSUME_NONNULL_BEGIN
     _desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
     _OpenEmuControllerLogFile = [_desktopPath stringByAppendingPathComponent:@"OpenEmuControllerLog.txt"];
     _lines = 0;
-    key = ftok("/Users/cinquemb/openemu/OpenEmu/nfbMemoryBridge", 'a'); 
-    shmid = shmget(key, 1024, 0666); 
-    if (shmid < 0) {
-        NSLog(@"*** shmget error (client) ***");
-    }
-    str = (char*) shmat(shmid, NULL, 0);
     return self;
 }
 
@@ -242,7 +228,6 @@ NS_ASSUME_NONNULL_BEGIN
         }
         NSLog(@"data written to file");
         _outPutData = @"";
-        _prev_str = @"";
         _lines = 0;
     }    
 
@@ -386,47 +371,6 @@ NS_ASSUME_NONNULL_BEGIN
 
     // Attach to the runloop
     IOHIDDeviceScheduleWithRunLoop(_device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
-
-    // Attach timer that checks new events from external process every 1 ms (0.001)
-    CFRunLoopTimerRef timer = CFRunLoopTimerCreateWithHandler(NULL, CFAbsoluteTimeGetCurrent() + 1, 0.001, 0, 0, ^(CFRunLoopTimerRef timer) {
-            /*
-            TODO: need to figure out how to:
-                - test changing values from external process (csv formate with no headers)
-            */
-            int len = (int)strlen(str);
-            NSNumber *lenNumber = [NSNumber numberWithInt:len];
-            NSString *lenNumberStr = [lenNumber stringValue];
-
-            NSString *nfbString = [NSString stringWithUTF8String:str];
-            
-            if ([nfbString isEqual:_prev_str])
-                return;
-            
-            NSArray *eventValues = [nfbString componentsSeparatedByString:@","];
-
-            if ([eventValues count] == 12){
-                NSTimeInterval timestamp = (![eventValues[0] isEqual:@"null"]) ? [eventValues[0] doubleValue] : [NSDate timeIntervalSinceReferenceDate];
-                NSUInteger eventType = (![eventValues[1] isEqual:@"null"]) ? [eventValues[1] integerValue] : nil;
-                NSUInteger cookie = (![eventValues[2] isEqual:@"null"]) ? [eventValues[2] integerValue] : nil;
-                NSUInteger axis = (![eventValues[3] isEqual:@"null"]) ? [eventValues[3] integerValue] : nil;
-                NSUInteger axisDirection = (![eventValues[4] isEqual:@"null"]) ? [eventValues[4] integerValue] : nil;
-                NSUInteger axisValue = (![eventValues[5] isEqual:@"null"]) ? [eventValues[5] integerValue] : nil;
-                NSUInteger buttonNumber = (![eventValues[6] isEqual:@"null"]) ? [eventValues[6] integerValue] : nil;
-                NSUInteger buttonState = (![eventValues[7] isEqual:@"null"]) ? [eventValues[7] integerValue] : nil;
-                NSUInteger hatSwitchType = (![eventValues[8] isEqual:@"null"]) ? [eventValues[8] integerValue] : nil;
-                NSUInteger hatDirection = (![eventValues[9] isEqual:@"null"]) ? [eventValues[9] integerValue] : nil;
-                NSUInteger keyState = (![eventValues[10] isEqual:@"null"]) ? [eventValues[10] integerValue] : nil;
-                NSUInteger keyCode = (![eventValues[11] isEqual:@"null"]) ? [eventValues[11] integerValue] : nil;
-                
-                OEHIDEvent *event = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie eventType:eventType axis:axis axisDirection:axisDirection axisValue:axisValue buttonNumber:buttonNumber buttonState:buttonState hatSwitchType:hatSwitchType hatDirection:hatDirection keyCode:keyCode keyState:keyState];
-                [self dispatchEvent:event];
-                OEHIDEvent *eventNull = [OEHIDEvent OE_initWithArgs:self timestamp:timestamp cookie:cookie eventType:eventType axis:axis axisDirection:nil axisValue:axisValue buttonNumber:buttonNumber buttonState:nil hatSwitchType:hatSwitchType hatDirection:nil keyCode:keyCode keyState:nil];
-                [self dispatchEvent:eventNull];
-            }
-
-            _prev_str = nfbString;
-    });
-    CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
 }
 
 - (void)OE_removeDeviceHandlerForDevice:(IOHIDDeviceRef)aDevice
@@ -451,7 +395,6 @@ NS_ASSUME_NONNULL_BEGIN
         }
         NSLog(@"data written to file");
         _lines = 0;
-        shmdt(str);
         _outPutData = @"";
     }
 

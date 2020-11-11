@@ -150,8 +150,6 @@ NSString *const OEGlobalButtonScreenshot        = @"OEGlobalButtonScreenshot";
                                                             state:NSOnState
                                                            cookie:OEUndefinedCookie];
 
-         NSLog(@"in OE_registerDefaultControls bindings");
-
          [bindings assignEvent:theEvent toKeyWithName:key];
      }];
 }

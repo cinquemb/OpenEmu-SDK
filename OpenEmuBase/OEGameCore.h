@@ -205,7 +205,10 @@ OE_EXPORTED_CLASS
  */
 - (void)setupEmulation;
 
-#pragma mark - Stopping
+
+- (oneway void)didPushNDSButton:(NSInteger)button forPlayer:(NSInteger)player;
+- (oneway void)didReleaseNDSButton:(NSInteger)button forPlayer:(NSInteger)player;
+//- (void)didPushNDSButton:(NSInteger *)didPushNDSButton didReleaseNDSButton:(NSInteger *)didReleaseNDSButton;
 
 /*!
  * @method stopEmulation
@@ -453,6 +456,9 @@ OE_EXPORTED_CLASS
 - (void)startEmulation;
 - (void)didStopEmulation;
 - (void)runStartUpFrameWithCompletionHandler:(void(^)(void))handler;
+
+- (oneway void)didPushNDSButton:(NSInteger)button forPlayer:(NSInteger)player;
+- (oneway void)didReleaseNDSButton:(NSInteger)button forPlayer:(NSInteger)player;
 
 - (void)stopEmulationWithCompletionHandler:(void(^)(void))completionHandler;
 @end
